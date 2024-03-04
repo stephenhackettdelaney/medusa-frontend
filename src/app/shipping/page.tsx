@@ -49,7 +49,7 @@ function Checkout() {
                 <h2 className='font-bold'>Shipping address to add to Cart</h2>
                 <pre>{JSON.stringify(SHIPPING_ADDRESS, null, "\t")}</pre>
                 <Button onClick={handleOnSubmit}>Submit Address</Button>
-                {cart?.shipping_address_id && <Link className='underline text-blue-500 text-center' href="/payment">Payment</Link>}
+                {cart?.shipping_address_id && <Link className='underline text-blue-500 text-center' href="/shippingOptions">Shipping options</Link>}
             </div>
         </div>
 
