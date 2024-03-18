@@ -50,7 +50,7 @@ export default function ProductCollection({ params }: { params: { slug: string }
 
     return (
         <div className='grid grid-cols-[1fr,2fr] gap-8 p-8'>
-            <Cart />
+            {/* <Cart /> */}
             <section>
                 {collection ? (
                     <div className="flex min-h-screen flex-col items-center gap-8 p-24">

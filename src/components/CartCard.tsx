@@ -1,21 +1,8 @@
-import { useEffect } from "react"
-import { useCart } from "medusa-react"
-export default function CartCard() {
+import { useRegion } from "medusa-react"
 
-    const { cart, setCart } = useCart()
-    const cart_id = localStorage.getItem("cart_id")
+export default function CartCard({ cart }: { cart: any }) {
 
-    useEffect(() => {
-        if (cart_id) {
-            fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${cart_id}`, {
-                credentials: "include",
-            })
-                .then((response) => response.json())
-                .then(({ cart }) => setCart(cart))
-        }
-
-
-    }, [cart_id, setCart])
+    const { region } = useRegion(cart?.region_id)
 
     return (
         <div className="flex flex-col gap-4">
@@ -24,6 +11,9 @@ export default function CartCard() {
             <p><strong>EMAIL:</strong> {!!cart?.email ? cart?.email : undefined}</p>
             <p><strong>ADDRESS ID:</strong> {!!cart?.shipping_address_id ? cart.shipping_address_id! : undefined}</p>
             <p><strong>ITEMS IN CART:</strong> {cart?.items.length || 0}</p>
+            <p><strong>Region:</strong> {region?.name}</p>
+            <p><strong>Country Code:</strong>nothing</p>
+            {/* <p><strong>Payment session:</strong>{cart?.payment_session}</p> */}
         </div>
     )
 }

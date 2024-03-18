@@ -1,76 +1,66 @@
 "use client"
-import React, { useEffect } from "react"
-import { useCart } from "medusa-react"
+import React from "react"
 import Link from "next/link"
-
-import { CartCard } from "."
+import { useRegion } from "medusa-react"
+import { useCartManagement } from "@/lib/hooks/useCartManagment"
+import { useRouter } from "next/navigation"
 
 const Cart = () => {
-  const { cart, setCart, createCart, updateCart } = useCart()
+  const { cart, createNewCart } = useCartManagement()
 
-  // RESET CART
-  // localStorage.removeItem("cart_id")
+  const isReadyForCheckout = !!cart?.id && !!cart?.email && cart.items.length
+  const router = useRouter()
 
-  const cart_id = localStorage.getItem("cart_id")
-
-  useEffect(() => {
-    if (cart_id) {
-      fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${cart_id}`, {
-        credentials: "include",
-      })
-        .then((response) => response.json())
-        .then(({ cart }) => setCart(cart))
-    }
-
-
-  }, [cart_id, setCart])
-
-  const handleCreateCart = () => {
-    createCart.mutate({}, {
-      onSuccess: ({ cart }) => {
-        localStorage.setItem("cart_id", cart.id)
-      },
-    })
+  function initCheckout() {
+    // in wrong place if setting payment provider ?
+    // But if its just authorize.net what then ?
+    // setPaymentSession()
+    router.push("/shipping")
   }
-
-  const changeEmail = (email: string) => {
-    updateCart.mutate({
-      email,
-    },
-      {
-        onSuccess: (({ cart }) => setCart(cart)),
-        onError: (error => console.log("change email error : ", error))
-      }
-    )
-  }
-
-  const email = "stephenhackettdelaney@gmail.com"
 
   return (
-    <div className="flex flex-col gap-4">
-      <CartCard />
-      {/* Currently set to EU - seems to be default - haven't looked into set US/CA region as default */}
-      {/* Hardcoded iso-2 it ( ITALY ) for country code ( in shipping ) */}
-      {/* {regions?.length && (
-        <ul>
-          {regions.map((region) => {
-            console.log("region : ", region)
-            return (
-              <li key={region.id}>
-                {region.name}
-              </li>
-            )
-          })}
-        </ul>
-      )} */}
-      {/* Probably done when user enters site */}
-      {!cart_id && <button onClick={handleCreateCart} className="border-2 border-cyan-900 px-6 py-2 bg-cyan-400 hover:bg-cyan-100">Create Cart</button>}
-      {(!!cart_id && !cart?.email) && (
-        <button onClick={() => changeEmail(email)} className="border-2 border-cyan-900 px-6 py-2 bg-cyan-400 hover:bg-cyan-100">Add email</button>
-      )}
-      {(!!cart_id && !!cart?.email && cart.items.length > 0) && <Link className="border-2 border-cyan-900 px-6 py-2 bg-cyan-400 hover:bg-cyan-100" href="/shipping">Checkout</Link>}
+    <div className="flex flex-col items-end gap-4">
+      <div className="flex flex-col gap-4">
+        <CartCard cart={cart} />
+        <section className="flex gap-4">
+          <button type="button" onClick={createNewCart} className="border-2 border-red-400 bg-white text-red-500 px-5 py-2">clear cart</button>
+          <button
+            className={`px-6 py-2  ${isReadyForCheckout ? "bg-cyan-400 hover:bg-cyan-100" : "bg-zinc-200 cursor-not-allowed"}`}
+            onClick={initCheckout}
+          >
+            Checkout
+          </button>
+        </section>
+      </div>
     </div>
   )
+}
+
+function CartCard({ cart }: { cart: any }) {
+
+  const { region } = useRegion(cart?.region_id)
+
+  return (
+    <details className=" bg-white p-5 rounded">
+      <summary>
+        <div className="flex justify-between">
+          <h2 className="font-bold text-2xl underline">{`Cart (items: ${cart?.items.length || 0})`}</h2>
+        </div>
+      </summary>
+      <section className="flex flex-col gap-4 mt-4">
+        <p><strong>ID:</strong> {!!cart?.id ? cart?.id : undefined}</p>
+        <p><strong>EMAIL:</strong> {!!cart?.email ? cart?.email : undefined}</p>
+        <p><strong>ADDRESS ID:</strong> {!!cart?.shipping_address_id ? cart.shipping_address_id! : undefined}</p>
+        <p><strong>ITEMS IN CART:</strong> {cart?.items.length || 0}</p>
+        <p><strong>Region:</strong> {region?.name}</p>
+        <p><strong>Payment session:</strong>{cart?.payment_session?.data?.status}</p>
+      </section>
+    </details>
+  )
+}
+
+function clearCart() {
+  localStorage.removeItem("cartId")
 }
 
 export default Cart

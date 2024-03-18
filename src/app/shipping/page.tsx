@@ -1,54 +1,29 @@
 "use client"
 import React from 'react'
 import Link from 'next/link'
-import { useCart } from "medusa-react"
-import { Button, CartCard } from '@/components'
+import { Button, Cart, Regions } from '@/components'
+import { useCartManagement } from '@/lib/hooks/useCartManagment'
+import { useForm } from 'react-hook-form'
+import { useRegion } from 'medusa-react'
 
 function Checkout() {
-    const cart_id = localStorage.getItem("cart_id")
+    const { cart, setCartCountryCode, setShippingAddress } = useCartManagement()
+    const { region } = useRegion(cart.region_id)
 
-    const { cart, setCart } = useCart()
-
-    const addShippingAddress = (address) => {
-        fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${cart_id}`, {
-            method: "POST",
-            credentials: "include",
-            body: JSON.stringify({
-                shipping_address: {
-                    company: address.company,
-                    first_name: address.first_name,
-                    last_name: address.last_name,
-                    address_1: address.address_1,
-                    address_2: address.address_2,
-                    city: address.city,
-                    country_code: address.country_code,
-                    province: address.province,
-                    postal_code: address.psotal_code,
-                    phone: address.phone,
-                },
-            }),
-            headers: {
-                "Content-Type": "application/json",
-            },
-        })
-            .then((response) => response.json())
-            .then(({ cart }) => {
-                setCart(cart)
-            })
-            .catch((error) => { throw new Error('SHIPPING ERROR : ', error) })
-    }
-
-    function handleOnSubmit() {
-        addShippingAddress(SHIPPING_ADDRESS)
+    function handleOnSubmit(values) {
+        setShippingAddress(values)
+        setCartCountryCode(values.country_code)
     }
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center p-24 gap-16">
-            <CartCard />
+        <div className="flex min-h-screen flex-col max-w-5xl mx-auto py-16 gap-16">
+            <section>
+                <Cart />
+                <Regions />
+            </section>
             <div className='flex flex-col gap-4'>
-                <h2 className='font-bold'>Shipping address to add to Cart</h2>
-                <pre>{JSON.stringify(SHIPPING_ADDRESS, null, "\t")}</pre>
-                <Button onClick={handleOnSubmit}>Submit Address</Button>
+                <h2 className='font-bold'>Shipping/Billable/Contact?</h2>
+                <Form handleOnSubmit={handleOnSubmit} countries={region?.countries} />
                 {cart?.shipping_address_id && <Link className='underline text-blue-500 text-center' href="/shippingOptions">Shipping options</Link>}
             </div>
         </div>
@@ -56,17 +31,36 @@ function Checkout() {
     )
 }
 
-const SHIPPING_ADDRESS = {
-    company: "CoMedia Design",
-    first_name: "Stephen",
-    last_name: "Hackett-Delaney",
-    address_1: "2505 Triumph st.",
-    address_2: "",
-    city: "Vancouver",
-    country_code: "it", // The 2 character ISO code of the country in lower case
-    province: "British Colombia",
-    postal_code: "V5K2S7",
-    phone: "7789986103",
+function Form({ handleOnSubmit, countries }) {
+    const { register, handleSubmit, watch, formState: { errors } } = useForm();
+    const onSubmit = data => handleOnSubmit(data);
+
+    return (
+        /* "handleSubmit" will validate your inputs before invoking "onSubmit" */
+        <form className='bg-white p-8 rounded w-full flex flex-col gap-4' onSubmit={handleSubmit(onSubmit)}>
+            {/* register your input into the hook by invoking the "register" function */}
+            <Input label="First Name" name="first_name" register={register} errors={errors} placeholder="Enter your first name..." />
+            <Input label="Second Name" name="last_name" register={register} errors={errors} placeholder="Enter your second name..." />
+            <section className='flex flex-col gap-2'>
+                <label>Select country</label>
+                <select className="p-3 rounded" {...register("country_code")} >
+                    {countries?.map((country: any, index: number) => <option key={index} value={country.iso_2}>{country.display_name}</option>)}
+                </select>
+            </section>
+
+            <Button type="submit">Submit</Button>
+        </form>
+    )
+}
+
+function Input({ label, name, register, errors, ...props }: { label: string, name: string, register: any, errors: any }) {
+    return (
+        <section className='flex flex-col gap-2'>
+            <label className='capitalize'>{label}</label>
+            <input className='pl-2 h-10 rounded border-2 border-zinc-400' {...register(name, { required: true })} {...props} />
+            {errors.name && <span>This field is required</span>}
+        </section>
+    )
 }
 
 export default Checkout
